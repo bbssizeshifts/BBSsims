@@ -1,0 +1,10 @@
+.Rproj.user
+^\species_data
+^\species_data\*
+.drake
+.drake\*
+*isd_data*
+.DS_Store
+^analysis/caches/*
+analysis/caches/*
+analysis\caches\*
