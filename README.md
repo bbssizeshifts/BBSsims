@@ -1,71 +1,24 @@
-# BBSsims
 
 
-<!-- badges: start -->
-[![Codecov test coverage](https://codecov.io/gh/bbssizeshifts/BBSsims/branch/main/graph/badge.svg)](https://codecov.io/gh/bbssizeshifts/BBSsims?branch=main)
+This repo contains code to reproduce the analyses in [redacted] "Temporal changes in the individual size distribution modulate the long-term trends of biomass, and energy use of North American breeding bird communities", in review. 
 
-This is a research compendium containing the code, data, and results supporting the manuscript "Temporal changes in the individual size distribution decouple long-term trends in abundance, biomass, and energy use of North American breeding bird communities", currently in review.
-
-## All use cases
-
-This repository includes specialized R functions written for this analysis. They are structured as an R package. To use them:
-
-1. Download this repository to your computer
-2. Open BBSsims.Rproj in RStudio
-3. In RStudio's "Build" pane, click Install
-4. You may have to update or install package dependencies
-
-Alternatively, you can open R and run:
+This code depends on the following R packages. If you do not have them installed, you can install them by running `install.packages("<PACKAGE_NAME>")` in R. 
 
 ```
-remotes::install_github("bbssizeshifts/BBSsims")
+dplyr
+tidyr
+vegan
+here
+mclust
+MuMIn
 ```
 
-You will still have to install or update dependencies. 
+To re-run all analyses:
 
-## To re-render the mansucript and supplement
+- Download this repo (You can download it as a .zip file by clicking on the green "Code" button and selecting "Download as .zip").
+- Open the included .Rproj file.
+- Run the script `analysis/pipelines/pipeline.R`. Results files will be stored in the `results` directory. Note that, by default, this script will only run analyses for the first 200 (of 1331 possible) sites. This takes about half an hour on a MacBook Air with 16GB of memory. Running for all sites typically takes about 3 hours on the same machine, and must be allowed to run in the same R session for the entire analysis.
 
-We have provided all materials necessary to re-render the figures and tables from the manuscript and supplements in `analysis/writing/submission1/source_documents`. To re-render these materials, open the .Rmd documents and re-run them.
+You can then load the individual .RDS files (which are described in detail in `analysis/results/object_descriptions.md` to explore them.
 
-If you would like to explore the final results more fully, we have provided the main results files as .RDS files in  `analysis/results/`. To load these, use (substituting in the appropriate file; see `analysis/results/object_descriptions.md` for more):
-
-```
-
-readRDS(here::here("analysis", "results", "all_sims.RDS"))
-
-```
-
-
-If you prefer to re-run the full analytical pipeline, use the instructions following. 
-
-
-## To re-run the analyses
-
-Open `analysis/pipelines/pipeline.R`, select all, and run. If you run the script as written, it will take around 24 hours (using a single core of your computer). If you just want to run the analytical pipeline on a few routes to explore it, uncomment line 20:
-
-```
-#datasets <- datasets[1:5, ]
-```
-
-to run on just a few routes.
-
-## To explore the final results
-
-
-The analysis script will save everything to an .sqlite cache at `analysis/caches/all.sqlite`. You can load objects into R like this:
-
-
-```
-library(drake)
-
-db <- DBI::dbConnect(RSQLite::SQLite(), here::here("analysis", "caches", "all.sqlite"))
-cache <- storr::storr_dbi("datatable", "keystable", db)
-cache$del(key = "lock", namespace = "session")
-
-loadd(all_sims, cache = cache)
-
-```
-
-Again,  see `analysis/results/object_descriptions.md` for descriptions of the main results objects.
-
-
+Or, you can reproduce the figures and tables included in the manuscript and appendices by opening and rendering the RMarkdown documents in `analysis/writing/revision2/source_documents`.

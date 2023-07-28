@@ -6,7 +6,7 @@
 #' @return dataset subsetted to the years in keep_years
 #' @export
 #'
-pull_focal_years <- function(dataset, keep_years = c(1988:2018)) {
+pull_focal_years <- function(dataset, keep_years = c(1989:2018)) {
 
   keep_rows <- which(dataset$covariates$year %in% keep_years)
 
@@ -219,11 +219,11 @@ eval_trend_models <- function(some_models) {
 #' @export
 #'
 #' @importFrom dplyr mutate
-#' @importFrom AICcmodavg AICc
+#' @importFrom MuMIn AICc
 pull_model_aic <- function(one_model) {
 
   one_model_aic <- data.frame(model_AIC = AIC(one_model),
-                              model_AICc = AICcmodavg::AICc(one_model)) %>%
+                              model_AICc = MuMIn::AICc(one_model)) %>%
     dplyr::mutate(model_family = one_model$family$family,
            model_link = one_model$family$link,
            model_formula = toString(one_model$formula[3]),
