@@ -2,7 +2,7 @@ library(drake)
 library(dplyr)
 library(ggplot2)
 ## Set up the cache and config
-db <- DBI::dbConnect(RSQLite::SQLite(), here::here("analyses", "caches", "year_coverage_cache.sqlite"))
+db <- DBI::dbConnect(RSQLite::SQLite(), here::here("analysis", "caches", "year_coverage_cache.sqlite"))
 cache <- storr::storr_dbi("datatable", "keystable", db)
 cache$del(key = "lock", namespace = "session")
 

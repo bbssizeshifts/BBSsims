@@ -1,69 +1,69 @@
+if(FALSE) {
+  
+  install.packages("dplyr")
+  install.packages("tidyr")
+  install.packages("vegan")
+  install.packages("here")
+  install.packages("mclust")
+  install.packages("MuMIn")
+  install.packages("R.utils")
+}
+
 library(dplyr)
-library(drake)
-library(BBSsims)
+
+R.utils::sourceDirectory(here::here("R"))
 
 datasets_files <- list.files(here::here("analysis", "bbs_data"), pattern = ".RDS")
 
-datasets <- drake_plan(
-  bbs = target(readRDS(here::here("analysis", "bbs_data", dataset_file)),
-               transform = map(
-                 dataset_file = !!datasets_files
-               )))
-datasets$target <- substr(datasets$target, 5, nchar(datasets$target))
-datasets$target <- substr(datasets$target, 0, nchar(datasets$target) - 4)
-
+# select datasets to work with
 working_datasets <- read.csv(here::here("analysis", "supporting_data","eightypercent_coverage_1988_2018.csv"))
 
+working_datasets$filename <- paste0(working_datasets$matssname, ".RDS")
 
-datasets <- datasets[ which(datasets$target %in% working_datasets$matssname), ]
+datasets_to_use <- datasets_files[ datasets_files %in% working_datasets$filename]
 
-#datasets <- datasets[1:5, ]
+#datasets_to_use <- datasets_to_use[1:200]
 
-methods <- drake_plan(
-  annual_svs = target(get_annual_state_variables(dataset),
-                 transform = map(
-                   dataset = !!rlang::syms(datasets$target)
-                 )),
-  all_sims = target(dplyr::bind_rows(annual_svs),
-                    transform = combine(annual_svs)),
-  glms_b = target(fit_trend_models_biomass(annual_svs),
-                transform = map(annual_svs)),
-  aics_b = target(eval_trend_models(glms_b),
-                transform = map(glms_b)),
-  preds_b = target(all_models_predicted_change(glms_b),
-                 transform = map(glms_b)),
-  all_aics_b = target(dplyr::bind_rows(aics_b),
-                    transform = combine(aics_b)),
-  all_preds_b = target(dplyr::bind_rows(preds_b),
-                     transform = combine(preds_b)),
-  glms_e = target(fit_trend_models_energy(annual_svs),
-                       transform = map(annual_svs)),
-  aics_e = target(eval_trend_models(glms_e),
-                       transform = map(glms_e)),
-  preds_e = target(all_models_predicted_change(glms_e),
-                        transform = map(glms_e)),
-  all_aics_e = target(dplyr::bind_rows(aics_e),
-                           transform = combine(aics_e)),
-  all_preds_e = target(dplyr::bind_rows(preds_e),
-                            transform = combine(preds_e)),
-  cs_compares = target(compare_community_structure(dataset),
-                        transform = map(
-                          dataset = !!rlang::syms(datasets$target)
-                        )),
-  all_cs_compares = target(dplyr::bind_rows(cs_compares),
-                            transform = combine(cs_compares))
-)
+# lapply to load datasets
 
-all = bind_rows(datasets, methods)
+datasets_loaded <- lapply(datasets_to_use, FUN = function(x) readRDS(here::here("analysis", "bbs_data", x)))
 
+set.seed(1989)
 
-## Set up the cache and config
-db <- DBI::dbConnect(RSQLite::SQLite(), here::here("analysis", "caches", "all.sqlite"))
-cache <- storr::storr_dbi("datatable", "keystable", db)
-cache$del(key = "lock", namespace = "session")
+# Generate and calculate estimated annual total biomass, energy use, and abundance per route
+annual_svs <- lapply(datasets_loaded, FUN = get_annual_state_variables)
 
-system.time(make(all, cache = cache,  verbose = 1, memory_strategy = "autoclean", lock_envir = F))
+# Combine to a single data frame and save
+all_sims <- dplyr::bind_rows(annual_svs)
+saveRDS(all_sims, file = here::here("analysis", "results", "all_sims.RDS"))
 
-# 5 took 1 minute on 1 core
+# Fit GLMS, calculate AIC values, and calculate model predictions for biomass
+# Save AICs and model predictions
 
+glms_b <- lapply(annual_svs, FUN = fit_trend_models_biomass)
 
+aics_b <- lapply(glms_b, FUN = eval_trend_models)
+all_aics_b <- dplyr::bind_rows(aics_b)
+saveRDS(all_aics_b, file = here::here("analysis", "results", "all_aics_b.RDS"))
+
+preds_b <- lapply(glms_b, FUN = all_models_predicted_change)
+all_preds_b <- dplyr::bind_rows(preds_b)
+saveRDS(all_preds_b, file = here::here("analysis", "results", "all_preds_b.RDS"))
+
+# Do the same for energy use
+
+glms_e <- lapply(annual_svs, FUN = fit_trend_models_energy)
+
+aics_e <- lapply(glms_e, FUN = eval_trend_models)
+all_aics_e <- dplyr::bind_rows(aics_e)
+saveRDS(all_aics_e, file = here::here("analysis", "results", "all_aics_e.RDS"))
+
+preds_e <- lapply(glms_e, FUN = all_models_predicted_change)
+all_preds_e <- dplyr::bind_rows(preds_e)
+saveRDS(all_preds_e, file = here::here("analysis", "results", "all_preds_e.RDS"))
+
+# Compare first and last five-year periods for each dataset
+
+cs_compares <- lapply(datasets_loaded, FUN = compare_community_structure)
+all_cs_compares <- dplyr::bind_rows(cs_compares)
+saveRDS(all_cs_compares, file = here::here("analysis", "results", "all_cs_compares.RDS"))

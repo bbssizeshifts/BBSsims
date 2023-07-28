@@ -13,6 +13,11 @@
 #' @importFrom dplyr select distinct mutate left_join bind_rows
 simulate_isd <- function(abundances, sd_dat = NULL, use_th_pars = F, isd_seed = NULL) {
 
+  if(is.null(sd_dat)) {
+    load(here::here("data", "sd_table.rda"))
+    sd_dat = sd_table
+  }
+
   if(is.null(isd_seed)) {
     isd_seed = sample.int(100000000, size = 1)
   }
@@ -77,8 +82,10 @@ simulate_isd <- function(abundances, sd_dat = NULL, use_th_pars = F, isd_seed = 
 simulate_isd_ts <- function(dataset, sd_dat = NULL, censusyears = NULL, use_th_pars = F, isd_seed = NULL) {
 
   if(is.null(sd_dat)) {
+    load(here::here("data", "sd_table.rda"))
     sd_dat = sd_table
   }
+
 
   abundances_long <- dataset$abundance %>%
     dplyr::mutate(year = dataset$covariates$year) %>%
