@@ -22,7 +22,7 @@ working_datasets$filename <- paste0(working_datasets$matssname, ".RDS")
 
 datasets_to_use <- datasets_files[ datasets_files %in% working_datasets$filename]
 
-#datasets_to_use <- datasets_to_use[1:200]
+datasets_to_use <- datasets_to_use[1:200]
 
 # lapply to load datasets
 
